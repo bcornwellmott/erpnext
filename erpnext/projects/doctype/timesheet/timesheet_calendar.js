@@ -5,8 +5,13 @@ frappe.views.calendar["Timesheet"] = {
 		"name": "parent",
 		"id": "parent",
 		"title": "activity_type",
-		"allDay": "allDay",
+		"allDay": "allDay", 
 		"child_name": "name"
+	},
+	style_map: {
+		"0": "info",
+		"1": "standard",
+		"2": "danger"
 	},
 	gantt: true,
 	filters: [
