@@ -119,6 +119,7 @@ class SalarySlip(TransactionBase):
 				self._salary_structure_doc = frappe.get_doc('Salary Structure', struct)
 				self.salary_slip_based_on_timesheet = self._salary_structure_doc.salary_slip_based_on_timesheet or 0
 				self.set_time_sheet()
+				self.get_hours_and_overtime(joining_date, relieving_date)
 				self.pull_sal_struct()
 
 	def set_time_sheet(self):
@@ -132,6 +133,22 @@ class SalarySlip(TransactionBase):
 					'time_sheet': data.name,
 					'working_hours': data.total_hours
 				})
+	def get_hours_and_overtime(self,joining_date, relieving_date):
+		hours_per_day = self._salary_structure_doc.hours_per_day
+
+		holidays = self.get_holidays_for_employee(self.start_date, self.end_date)
+		working_days = date_diff(self.end_date, self.start_date) + 1
+		if not cint(frappe.db.get_value("HR Settings", None, "include_holidays_in_total_working_days")):
+			working_days -= len(holidays)
+			if working_days < 0:
+				frappe.throw(_("There are more holidays than working days this month."))
+
+		lwp = self.calculate_lwp(holidays, working_days)
+		payment_days = flt(self.get_payment_days(joining_date, relieving_date)) - flt(lwp)
+		frappe.msgprint(working_days)
+		frappe.msgprint(payment_days)
+		self.pay_period_hours = hours_per_day * payment_days
+		
 
 	def set_month_dates(self):
 		if self.month and not self.salary_slip_based_on_timesheet:
@@ -168,7 +185,12 @@ class SalarySlip(TransactionBase):
 		if self.salary_slip_based_on_timesheet:
 			self.salary_structure = self._salary_structure_doc.name
 			self.hour_rate = self._salary_structure_doc.hour_rate
+			self.overtime_rate = self._salary_structure_doc.overtime_rate
 			self.total_working_hours = sum([d.working_hours or 0.0 for d in self.timesheets]) or 0.0
+			if self.total_working_hours > self.pay_period_hours:
+				self.overtime_hours = self.total_working_hours - self.pay_period_hours
+			else:
+				self.overtime_hours = 0
 			self.add_earning_for_hourly_wages(self._salary_structure_doc.salary_component)
 			
 			
@@ -183,14 +205,14 @@ class SalarySlip(TransactionBase):
 		default_type = False
 		for data in self.earnings:
 			if data.salary_component == salary_component:
-				data.amount = self.hour_rate * self.total_working_hours
+				data.amount = self.hour_rate * (self.total_working_hours - self.overtime_hours) + self.overtime_rate * self.overtime_hours
 				default_type = True
 				break
 
 		if not default_type:
 			earnings = self.append('earnings', {})
 			earnings.salary_component = salary_component
-			earnings.amount = self.hour_rate * self.total_working_hours
+			earnings.amount = self.hour_rate * (self.total_working_hours - self.overtime_hours) + self.overtime_rate * self.overtime_hours
 
 	def pull_emp_details(self):
 		emp = frappe.db.get_value("Employee", self.employee, ["bank_name", "bank_ac_no"], as_dict=1)
