@@ -25,6 +25,9 @@ frappe.ui.form.on("BOM", {
 			frm.add_custom_button(__("Update Cost"), function() {
 				frm.events.update_cost(frm);
 			});
+			frm.add_custom_button(__("Update All Costs"), function() {
+				frm.events.update_all_costs(frm);
+			});
 			frm.add_custom_button(__("Browse BOM"), function() {
 				frappe.route_options = {
 					"bom": frm.doc.name
@@ -46,6 +49,16 @@ frappe.ui.form.on("BOM", {
 		return frappe.call({
 			doc: frm.doc,
 			method: "update_cost",
+			freeze: true,
+			callback: function(r) {
+				if(!r.exc) frm.refresh_fields();
+			}
+		})
+	},
+	update_all_costs: function(frm) {
+		return frappe.call({
+			doc: frm.doc,
+			method: "update_all_costs",
 			freeze: true,
 			callback: function(r) {
 				if(!r.exc) frm.refresh_fields();

@@ -142,6 +142,28 @@ class BOM(Document):
 
 		return rate
 
+	def update_all_costs(self):
+		if self.docstatus == 2:
+			return
+
+		for d in self.get("items"):
+			if d.bom_no:
+				#Get the BOM for this one and run update all costs on it
+				bom = frappe.get_doc("BOM", d.bom_no)
+				bom.update_all_costs()
+			rate = self.get_bom_material_detail({'item_code': d.item_code, 'bom_no': d.bom_no,
+				'qty': d.qty})["rate"]
+			if rate:
+				d.rate = rate
+
+		if self.docstatus == 1:
+			self.flags.ignore_validate_update_after_submit = True
+			self.calculate_cost()
+		self.save()
+		self.update_exploded_items()
+
+		frappe.msgprint(_("Cost Updated for {}".format(self.get('item'))))
+		
 	def update_cost(self):
 		if self.docstatus == 2:
 			return
