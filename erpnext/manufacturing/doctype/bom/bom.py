@@ -129,7 +129,9 @@ class BOM(Document):
 			rate = self.get_valuation_rate(arg)
 		elif arg['bom_no']:
 			rate = self.get_bom_unitcost(arg['bom_no'])
-		elif arg:
+			
+
+		if rate <= 0 and arg:
 			if self.rm_cost_as_per == 'Valuation Rate':
 				rate = self.get_valuation_rate(arg)
 			elif self.rm_cost_as_per == 'Last Purchase Rate':
@@ -139,7 +141,6 @@ class BOM(Document):
 					frappe.throw(_("Please select Price List"))
 				rate = frappe.db.get_value("Item Price", {"price_list": self.buying_price_list,
 					"item_code": arg["item_code"]}, "price_list_rate") or 0
-
 		return rate
 
 	def update_all_costs(self):
@@ -150,7 +151,7 @@ class BOM(Document):
 			if d.bom_no:
 				#Get the BOM for this one and run update all costs on it
 				bom = frappe.get_doc("BOM", d.bom_no)
-				bom.update_all_costs()
+				bom.update_all_costs() 
 			rate = self.get_bom_material_detail({'item_code': d.item_code, 'bom_no': d.bom_no,
 				'qty': d.qty})["rate"]
 			if rate:
@@ -338,11 +339,14 @@ class BOM(Document):
 		"""Fetch RM rate as per today's valuation rate and calculate totals"""
 		total_rm_cost = 0
 		base_total_rm_cost = 0
-
+		
 		for d in self.get('items'):
+			
 			if d.bom_no:
-				d.rate = self.get_bom_unitcost(d.bom_no)
-
+				rate = 0
+				rate = self.get_bom_unitcost(d.bom_no)
+				if rate > 0:
+					d.rate = rate
 			d.base_rate = flt(d.rate) * flt(self.conversion_rate)
 			d.amount = flt(d.rate, self.precision("rate", d)) * flt(d.qty, self.precision("qty", d))
 			d.base_amount = d.amount * flt(self.conversion_rate)

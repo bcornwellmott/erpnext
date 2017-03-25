@@ -22,10 +22,10 @@ frappe.ui.form.on("BOM", {
 		toggle_operations(frm);
 
 		if (!frm.doc.__islocal && frm.doc.docstatus<2) {
-			frm.add_custom_button(__("Update Cost"), function() {
+			frm.add_custom_button(__("Update Cost"), function() { 
 				frm.events.update_cost(frm);
 			});
-			frm.add_custom_button(__("Update All Costs"), function() {
+			frm.add_custom_button(__("Update All Costs"), function() { 
 				frm.events.update_all_costs(frm);
 			});
 			frm.add_custom_button(__("Browse BOM"), function() {
