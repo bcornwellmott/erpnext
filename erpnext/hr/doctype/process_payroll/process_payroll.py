@@ -143,6 +143,7 @@ class ProcessPayroll(Document):
 		jv_name = ""
 		ss_list = self.get_sal_slip_list(ss_status=0)
 		submitted_ss = []
+		submitted_docs = []
 		not_submitted_ss = []
 		for ss in ss_list:
 			ss_obj = frappe.get_doc("Salary Slip",ss[0])
@@ -158,10 +159,17 @@ class ProcessPayroll(Document):
 				try:
 					ss_obj.submit()
 					submitted_ss.append(ss_dict)
+					submitted_docs.append(ss_obj)
 				except frappe.ValidationError:
 					not_submitted_ss.append(ss_dict)
 		if submitted_ss:
 			jv_name = self.make_accural_jv_entry()		
+			for ss in submitted_docs:
+				try:
+					frappe.msgprint(str(ss.name))
+					frappe.db.set_value('Salary Slip', ss.name, "accrual_voucher", jv_name)
+				except: 
+					frappe.msgprint("ERROR")
 
 		return self.create_submit_log(submitted_ss, not_submitted_ss, jv_name)
 

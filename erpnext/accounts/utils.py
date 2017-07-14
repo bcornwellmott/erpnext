@@ -581,7 +581,10 @@ def get_outstanding_invoices(party_type, party, account, condition=None):
 	if party_type=="Customer":
 		dr_or_cr = "debit_in_account_currency - credit_in_account_currency"
 		payment_dr_or_cr = "payment_gl_entry.credit_in_account_currency - payment_gl_entry.debit_in_account_currency"
-	else:
+	elif party_type=="Supplier":
+		dr_or_cr = "credit_in_account_currency - debit_in_account_currency"
+		payment_dr_or_cr = "payment_gl_entry.debit_in_account_currency - payment_gl_entry.credit_in_account_currency"
+	elif party_type=="Employee":
 		dr_or_cr = "credit_in_account_currency - debit_in_account_currency"
 		payment_dr_or_cr = "payment_gl_entry.debit_in_account_currency - payment_gl_entry.credit_in_account_currency"
 
@@ -627,7 +630,7 @@ def get_outstanding_invoices(party_type, party, account, condition=None):
 			'invoice_amount': flt(d.invoice_amount),
 			'payment_amount': flt(d.payment_amount),
 			'outstanding_amount': flt(d.invoice_amount - d.payment_amount, precision),
-			'due_date': frappe.db.get_value(d.voucher_type, d.voucher_no, "due_date"),
+			'due_date': frappe.db.get_value(d.voucher_type, d.voucher_no, "posting_date") if party_type=="Employee" else frappe.db.get_value(d.voucher_type, d.voucher_no, "due_date"),
 		}))
 
 	outstanding_invoices = sorted(outstanding_invoices, key=lambda k: k['due_date'] or getdate(nowdate()))

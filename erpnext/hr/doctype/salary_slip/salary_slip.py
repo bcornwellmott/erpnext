@@ -424,6 +424,7 @@ class SalarySlip(TransactionBase):
 			status = "Cancelled"
 		return status
 
+
 def unlink_ref_doc_from_salary_slip(ref_no):
 	linked_ss = frappe.db.sql_list("""select name from `tabSalary Slip`
 	where journal_entry=%s and docstatus < 2""", (ref_no))
